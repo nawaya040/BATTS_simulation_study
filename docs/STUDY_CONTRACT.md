@@ -71,3 +71,17 @@ Exact historic manuscript layouts and standalone illustrative datasets (such
 as S5's separate n=500+500, seed-2 illustration) remain documented historical
 plotting work. They are not silently substituted with the larger main-study
 datasets. Building the final journal figure/submission package remains deferred.
+
+## Saved-posterior validation (U24)
+
+Validation checks the retained temperature count, positivity and finiteness.
+For detail seeds, it checks every serialized tree's preorder structure,
+split dimensions and locations, and positive finite leaf parameters. It
+independently evaluates every saved forest in R at all observed points and
+all stored in-domain grid points, comparing observed draws and grid summaries
+with tolerance 1e-10. Grid coordinates, truth and the domain mask must match
+the saved input. Non-detail seeds do not store forests and receive the draw,
+temperature and summary checks only. These checks do not fit a model or use
+random numbers; full forest evaluation adds time and a grid-by-draw matrix.
+File checksums continue to be required. Internal consistency does not establish
+external authenticity or MCMC convergence. Existing result files are read only.

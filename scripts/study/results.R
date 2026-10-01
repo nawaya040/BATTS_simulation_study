@@ -1,4 +1,98 @@
+# Re-evaluate saved posterior trees in R, without fitting or consuming RNG.
+# The serialized tree is preorder, d is zero-based and -1 denotes a leaf.
+study_saved_tree_weights <- function(tree, points) {
+  if(!is.list(tree) || !all(c('d','l','beta') %in% names(tree)) ||
+     anyDuplicated(names(tree))) stop('Invalid posterior tree schema')
+  d<-tree$d; cut<-tree$l; beta<-tree$beta; n<-length(d)
+  if(!is.numeric(d)||!is.numeric(cut)||!is.numeric(beta)||n<1L||
+     length(cut)!=n||length(beta)!=n||any(!is.finite(d))||
+     any(d!=floor(d))||any(d < -1 | d >= ncol(points))) stop('Invalid posterior tree dimensions')
+  split<-d>=0
+  if(any(!is.finite(cut[split]))||any(cut[split]<=0|cut[split]>=1)||
+     any(!is.finite(beta[!split]))||any(beta[!split]<=0)) stop('Invalid posterior tree parameters')
+  stack<-list(list(rows=seq_len(nrow(points)),lo=rep(0,ncol(points)),hi=rep(1,ncol(points))))
+  weight<-rep(NA_real_,nrow(points))
+  for(i in seq_len(n)) {
+    k<-length(stack)
+    if(k==0L) stop('Extra posterior tree nodes')
+    node<-stack[[k]];stack[[k]]<-NULL
+    if(!split[i]) {weight[node$rows]<-sqrt(beta[i]);next}
+    j<-d[i]+1L; location<-node$lo[j]+cut[i]*(node$hi[j]-node$lo[j])
+    left<-node;right<-node
+    left$hi[j]<-location;right$lo[j]<-location
+    goes_left<-points[node$rows,j]<location
+    left$rows<-node$rows[goes_left];right$rows<-node$rows[!goes_left]
+    stack[[length(stack)+1L]]<-right
+    stack[[length(stack)+1L]]<-left
+  }
+  if(length(stack)||anyNA(weight)) stop('Incomplete posterior tree')
+  weight
+}
+
+study_validate_bat_saved <- function(value, sim, row, config) {
+  count<-config$bat$size_backfitting
+  if(!is.numeric(value$omega)||length(value$omega)!=count||
+     any(!is.finite(value$omega))||any(value$omega<=0)||
+     !identical(1/value$omega,value$tau_inverse)) stop('Temperature draws mismatch')
+  if(!is.matrix(value$draws)||!is.numeric(value$draws)||any(!is.finite(value$draws)))
+    stop('Invalid BAT draws')
+  if(!row$seed %in% config$detail_seeds) return(invisible(TRUE))
+  if(!is.list(value$forests)||length(value$forests)!=count||
+     any(!vapply(value$forests,is.list,logical(1)))||
+     any(lengths(value$forests)!=config$bat$num_trees)) stop('Posterior forest count mismatch')
+  x<-as.matrix(sim$data); domain<-value$domain
+  if(!is.matrix(domain)||!is.numeric(domain)||!identical(dim(domain),c(ncol(x),2L))||
+     any(!is.finite(domain))||any(domain[,2]<=domain[,1])||
+     !is.list(value$data_info)||!identical(value$data_info$min_max_values,domain)||
+     !identical(as.integer(value$data_info$d),as.integer(ncol(x)))||
+     !is.numeric(value$fit_c)||length(value$fit_c)!=1L||
+     !is.finite(value$fit_c)||value$fit_c<=0) stop('Invalid posterior prediction metadata')
+  within<-function(p) apply(sweep(p,2,domain[,1],'>=') & sweep(p,2,domain[,2],'<='),1,all)
+  if(any(!is.finite(x))||!all(within(x))) stop('Observed points outside posterior domain')
+  points<-x; nobs<-nrow(x); ngrid<-0L
+  if(!is.null(sim$grid_points)) {
+    gp<-as.matrix(sim$grid_points); inside<-within(gp)
+    if(any(inside)) {
+      grid<-value$grid
+      if(!is.list(grid)||!identical(grid$points,gp)||!identical(grid$inside,inside)||
+         !identical(grid$truth,sim$true_log_w_grid)||
+         !is.numeric(grid$mean)||length(grid$mean)!=sum(inside)||
+         !is.matrix(grid$quantiles)||!identical(dim(grid$quantiles),c(sum(inside),3L)))
+        stop('Saved grid schema mismatch')
+      ngrid<-sum(inside);points<-rbind(points,gp[inside,,drop=FALSE])
+    } else if(!is.null(value$grid)) stop('Unexpected saved grid')
+  } else if(!is.null(value$grid)) stop('Unexpected saved grid')
+  points<-sweep(sweep(points,2,domain[,1],'-'),2,domain[,2]-domain[,1],'/')
+  grid_draws<-matrix(NA_real_,ngrid,count)
+  for(s in seq_len(count)) {
+    w<-rep(1,nrow(points))
+    for(tree in value$forests[[s]]) w<-w*study_saved_tree_weights(tree,points)
+    pred<-2*log(value$fit_c*w)
+    if(any(!is.finite(pred))||
+       !isTRUE(all.equal(as.numeric(pred[seq_len(nobs)]),as.numeric(value$draws[,s]),
+                         tolerance=1e-10,check.attributes=FALSE)))
+      stop('Posterior forests disagree with observed draws')
+    if(ngrid) grid_draws[,s]<-pred[nobs+seq_len(ngrid)]
+  }
+  if(ngrid) {
+    q<-t(apply(grid_draws,1,quantile,probs=c(.025,.5,.975)))
+    if(!isTRUE(all.equal(rowMeans(grid_draws),value$grid$mean,tolerance=1e-10,check.attributes=FALSE))||
+       !isTRUE(all.equal(q,value$grid$quantiles,tolerance=1e-10,check.attributes=FALSE)))
+      stop('Saved grid summaries disagree with posterior forests')
+  }
+  invisible(TRUE)
+}
+
 study_validate <- function(runroot,require_complete=FALSE,retain_draws=FALSE) {
+  # Fold verification can seed R internally; validation must leave the caller's
+  # RNG state unchanged, including on failure or when no seed existed.
+  had_seed<-exists('.Random.seed',envir=.GlobalEnv,inherits=FALSE)
+  if(had_seed) saved_seed<-get('.Random.seed',envir=.GlobalEnv,inherits=FALSE)
+  on.exit({
+    if(had_seed) assign('.Random.seed',saved_seed,envir=.GlobalEnv)
+    else if(exists('.Random.seed',envir=.GlobalEnv,inherits=FALSE))
+      rm(list='.Random.seed',envir=.GlobalEnv)
+  },add=TRUE)
   runobj<-study_read_result(file.path(runroot,'run.rds'))
   run<-runobj$value;run_id<-study_hash(run$identity)
   if(!identical(runobj$identity,list(run_id=run_id))) stop('Run manifest identity mismatch')
@@ -43,8 +137,7 @@ study_validate <- function(runroot,require_complete=FALSE,retain_draws=FALSE) {
          !isTRUE(all.equal(rowMeans(value$draws),value$estimates$primary,tolerance=0))) stop('BAT draws mismatch')
       q<-t(apply(value$draws,1,quantile,probs=c(.025,.5,.975)))
       if(!identical(q,value$quantiles)) stop('Posterior quantiles disagree with draws')
-      if(row$seed %in% run$identity$config$detail_seeds && !length(value$forests)) stop('Missing posterior forests')
-      if(!length(value$omega)||!identical(1/value$omega,value$tau_inverse)) stop('Temperature draws mismatch')
+      study_validate_bat_saved(value,sim,row,run$identity$config)
       if(!identical(coverage_compute(value$draws,as.numeric(sim$true_log_w_obs)),value$coverage)) stop('Coverage mismatch')
     }
     if(row$method %in% c('gb','fs','ada')) {
