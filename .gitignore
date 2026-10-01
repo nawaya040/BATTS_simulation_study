@@ -16,7 +16,3 @@ results/
 __pycache__/
 .DS_Store
 Thumbs.db
-
-# Local assistant configuration (not distributed)
-AGENTS.md
-CLAUDE.md
