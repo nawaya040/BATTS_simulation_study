@@ -1,93 +1,103 @@
 # BATTS simulation study
 
-Simulation development and review repository for *Two-sample Comparison
-through Additive Tree Models for Density Ratios*.
+Simulation code for *Two-sample Comparison through Additive Tree Models for
+Density Ratios*. The supported entry point is `scripts/run_study.R`.
+It runs selected jobs, saves each job independently, and resumes only verified
+results from the same code, configuration and environment.
 
-**Status: simulation development and review.** The initial import preserved
-the existing scientific source. AdaBoost CV now uses arithmetic mean fold
-loss; see [paired validation](docs/ADABOOST_CV_ARITHMETIC_VALIDATION.md). Coverage and
-boosting smoke runs passed against BATTS 0.1.0; see
-[validation](docs/VALIDATION.md). New runs target BATTS 0.2.0; see
-[migration status](docs/MIGRATION_STATUS.md) before running them.
-This import is not a complete, validated rerun of the paper.
+The package is maintained separately at [nawaya040/BATTS](https://github.com/nawaya040/BATTS).
+This workflow pins BATTS **0.2.0**, commit
+`c4d194336bd0610372fe8d1b08caa7f94a7cd168`, and the submitted modified
+`densratio` source under `vendor/`. Case-study work remains in
+[yuliangxu/TwoSample](https://github.com/yuliangxu/TwoSample).
 
-## Repositories and versions
+## Prepare an environment
 
-- Estimation package: [nawaya040/BATTS](https://github.com/nawaya040/BATTS).
-- Target package version: **0.2.0**, commit
-  `c4d194336bd0610372fe8d1b08caa7f94a7cd168`.
-- Simulation code and settings: this repository.
-- Case study: [yuliangxu/TwoSample](https://github.com/yuliangxu/TwoSample).
-
-BATTS package source, case-study data, manuscript files, and generated results
-are not bundled here. The journal submission archive will be rebuilt after
-the manuscript and computational changes are settled.
-
-## Contents
-
-| Directory | Purpose |
-| --- | --- |
-| `scripts/coverage/` | Corrected symmetric interval coverage for 1D, 2D and latent 20D settings; includes data generators |
-| `scripts/boosting/` | GB, FS and AdaBoost DRT tree-selection experiments |
-| `scripts/revision/20d_global_shift/` | Historical 20D global-shift/null, transformed settings, kernel and CDC workflows; old version guards remain |
-| `scripts/revision/` | Historical job planning and table aggregation |
-| `scripts/figures/` | Imported plotting scripts that accept portable paths or use repository-relative paths |
-| `docs/` | Source provenance, migration gaps, environment and review scope |
-
-Inherited directory READMEs describe the runs for which the scripts were
-originally written. Their historical approvals and completion claims do not
-authorize a new canonical run or establish validation with BATTS 0.1.0.
-
-## Install the target BATTS version
-
-Use an isolated library. In R, starting from this repository:
+Use R 4.5 or later and a C++17 compiler (Rtools45 on Windows with R 4.5).
+Install prerequisites in your ordinary R library if needed:
 
 ```r
-dir.create(".Rlib", showWarnings = FALSE)
-.libPaths(c(normalizePath(".Rlib"), .libPaths()))
-install.packages("remotes", lib = ".Rlib")
-remotes::install_github(
-  "nawaya040/BATTS@c4d194336bd0610372fe8d1b08caa7f94a7cd168",
-  lib = ".Rlib", dependencies = NA, upgrade = "never"
-)
-install.packages(c("ada", "rpart", "mvtnorm", "pracma"), lib = ".Rlib")
-stopifnot(as.character(packageVersion("BATTS")) == "0.2.0")
-stopifnot(packageDescription("BATTS")$RemoteSha ==
-  "c4d194336bd0610372fe8d1b08caa7f94a7cd168")
+install.packages(c("remotes", "Rcpp", "RcppArmadillo", "ada", "rpart",
+                   "mvtnorm", "pracma", "digest", "matrixStats"))
 ```
 
-A C++17 toolchain is required when building BATTS from source. See
-[environment notes](docs/ENVIRONMENT.md) for the tested environment and optional
-dependencies. These installation instructions pin BATTS; they do not constitute
-a complete dependency lock.
-
-## Smoke runs
-
-Run from the repository root, using a fresh output directory:
+From the repository root, create a **new, empty** study library:
 
 ```text
-Rscript scripts/coverage/run_coverage_2d.R --mode=smoke --scenario=local_shift --seed=1 --batts-lib=.Rlib --output-dir=output/coverage-check
-Rscript scripts/boosting/run_boosting_selection.R --mode=smoke --family=2d --scenario=local_shift --seed=1 --r-lib=.Rlib --output-dir=output/boosting-check
+Rscript scripts/prepare_environment.R --install=true --r-lib=.Rlib
 ```
 
-These use reduced settings and write `SMOKE_NOT_FOR_PAPER` metadata, source and
-package hashes, and output checksums. Existing results are refused unless the
-runner's explicit resume checks succeed. Consult each workflow's README for
-its arguments and settings. A smoke result does not validate paper numbers.
+For an offline BATTS source build, add `--batts-source=/path/to/BATTS` pointing
+to a clean checkout of the exact pinned commit. The bootstrap installs BATTS
+and vendored densratio, then records R, OS, compiler, dependency versions and
+installed-file hashes in `.Rlib/study-environment.rds`. Other dependencies are
+resolved from the inherited R library paths and fingerprinted recursively.
+Workers must resolve the same files. Changes to this environment require a new
+run directory. This is a checked local environment receipt; preserve the
+working libraries or package archives to rebuild the same binaries later.
 
-The imported coverage/boosting loaders record the installed package but do not
-enforce the target release themselves. Use the isolated, pinned library above.
-The 20D global/null new-run guard uses the fixed commit above. Historical
-result readers retain their old provenance checks; full workflow validation
-is tracked in migration status.
+## Inspect and run
 
-## Before full computation
+```text
+Rscript scripts/run_study.R --dry-run=true
+Rscript scripts/run_study.R --profile=paper --dry-run=true
+Rscript scripts/run_study.R --profile=smoke --family=2d --scenario=local_shift --balance=balanced --methods=bat,gb,fs,ada --workers=2 --r-lib=.Rlib --output-dir=output/smoke-local
+```
 
-1. Review [the import and remaining work](docs/MIGRATION_STATUS.md).
-2. Audit the exact BATTS commit and exact simulation commit using
-   [the review scope](docs/REVIEW_SCOPE.md).
-3. Agree with the coauthors on comparator changes and sensitivity analyses.
-4. Approve scientific patches and canonical settings, then freeze both commits.
+The default profile is `smoke`. With no filters, smoke runs **160 jobs** across
+all supported settings. Paper settings enumerate **8,100 jobs**, including
+the fixed-tree 1D comparison. Both use 20 coordinates in the 20D scenarios.
+`--dry-run=true` prints the plan without installing packages or producing results.
 
-No independent AI review, coauthor approval of this new repository, or full
-simulation rerun is implied by its creation.
+Filters accept comma-separated `--family`, `--scenario`, `--methods`,
+`--seeds` and `--case`; `--balance=balanced|unbalanced` and
+`--transformed=true|false` are also available. Families are `1d`, `1d_fixed`,
+`2d`, `20d`. CDC automatically includes its prerequisite Ada job.
+
+A paper run additionally requires a clean Git checkout and
+`--confirm-canonical=YES`. Approve the actual computation separately before
+using this option. Freezing the code and reviewing a dry-run plan should precede
+a multi-day run. Start with a selected scenario/seed if desired; expanding the
+selection later uses the same full plan stored in the run manifest.
+
+## Resume and summarize
+
+Use the same profile, library, worker count and output root, with explicit resume:
+
+```text
+Rscript scripts/run_study.R --profile=smoke --family=2d --scenario=local_shift --balance=balanced --workers=2 --r-lib=.Rlib --output-dir=output/smoke-local --resume=true
+Rscript scripts/validate_results.R --run-dir=output/smoke-local
+Rscript scripts/summarize_study.R --run-dir=output/smoke-local --output-dir=output/summary-local
+```
+
+The second invocation can add missing methods/cases by expanding its filters.
+It checks existing result bodies and hashes before skipping completed jobs.
+Changing source, commit, profile, environment or worker count requires a new
+output root. A failed job leaves successful jobs available for resume.
+Corrupt or half-written outputs stop validation; they are never silently replaced.
+See [operations and recovery](docs/OPERATIONS.md).
+
+Add `--require-complete=true` to validation or aggregation when every job in
+the full profile must be present. Partial summaries explicitly report missing
+jobs. Summary directories must be new. Outputs include MSE/MCSE, failure counts,
+coverage and localization CSVs, diagnostic PDF pages, and a manifest linking
+the input and output hashes. Every MSE table carries a smoke/paper label.
+
+## Scope and evidence
+
+- [Settings, seeds, saved objects and figure inputs](docs/STUDY_CONTRACT.md)
+- [Infrastructure validation](docs/INFRASTRUCTURE_VALIDATION.md)
+- [Current migration status and historical provenance](docs/MIGRATION_STATUS.md)
+- [AdaBoost arithmetic-loss CV decision](docs/ADABOOST_CV_ARITHMETIC_VALIDATION.md)
+- [Independent review scope](docs/REVIEW_SCOPE.md)
+
+Older workflow entry points under `scripts/coverage`, `scripts/boosting`,
+`scripts/revision` and `scripts/figures` are historical references. Their shared
+functions and generators are reused by the supported runner; their standalone
+commands and historical result readers are not part of its resume contract.
+Use the commands above for new runs. Original import hashes remain in
+`docs/SOURCE_MANIFEST.csv`.
+
+Full paper runs, coauthor approval, journal-specific figure layout and the final
+submission archive are separate follow-up work. Existing official results and
+manuscript files are unchanged by this infrastructure.

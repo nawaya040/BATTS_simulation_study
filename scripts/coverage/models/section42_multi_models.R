@@ -428,6 +428,8 @@ simulation_multi_latent = function(n0, n1, d, scenario, unif_w = 0.2, transform 
 
   out = list("data" = data,
              "data_u" = data_u,
+             "loading" = U,
+             "data_before_transform" = data_before_transform,
              "group_labels" = group_labels,
              "true_log_w_obs" = differences_log_dens)
 

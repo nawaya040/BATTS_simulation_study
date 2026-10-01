@@ -1,0 +1,2 @@
+# Preserve submitted vendor bytes, including upstream whitespace.
+vendor/densratio/** -text -whitespace
