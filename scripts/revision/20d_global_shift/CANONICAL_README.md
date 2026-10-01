@@ -9,7 +9,7 @@ This approved reviewer-driven run evaluates four cells:
 
 Each cell uses seeds 1--50. BART uses 200 trees, 2,000 burn-in sweeps,
 1,000 retained sweeps, and `lambda_0 = 5`. The installed BATTS package must
-report commit `6f625bad83702b36e5480be1ed1343258a9b075a`.
+report commit `c4d194336bd0610372fe8d1b08caa7f94a7cd168`.
 
 The full `10000 x 1000` posterior log-density-ratio matrix is saved for every
 replicate. Each result also has a `.done.rds` sidecar containing its SHA-256,

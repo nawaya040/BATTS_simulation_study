@@ -171,8 +171,7 @@ coverage_fit <- function(data, group_labels, truth, settings, reset_seed = NULL,
     size_backfitting = settings$size_backfitting,
     output_BART_ensembles = output_ensembles,
     lambda_0 = settings$lambda_0,
-    quiet = TRUE,
-    update_lambda = FALSE
+    quiet = TRUE
   )
   if (!is.matrix(fit$balance_weight_BART_data) ||
       any(!is.finite(fit$balance_weight_BART_data)) ||

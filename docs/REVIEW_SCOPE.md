@@ -3,7 +3,7 @@
 This is a brief for the next review, not a record that it has been performed.
 
 Review the exact simulation repository commit supplied by the author together
-with BATTS v0.1.0, commit `ceb5fb6bb0045ab6b72f2a91c620a0b3c5bba3b0`.
+with BATTS 0.2.0, commit `c4d194336bd0610372fe8d1b08caa7f94a7cd168`.
 Record both full hashes at the start; do not substitute another branch or HEAD.
 Assess the existing implementation independently, using prior review findings
 as a checklist after the initial examination.

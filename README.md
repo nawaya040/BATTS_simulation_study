@@ -7,16 +7,15 @@ through Additive Tree Models for Density Ratios*.
 the existing scientific source. AdaBoost CV now uses arithmetic mean fold
 loss; see [paired validation](docs/ADABOOST_CV_ARITHMETIC_VALIDATION.md). Coverage and
 boosting smoke runs passed against BATTS 0.1.0; see
-[validation](docs/VALIDATION.md). Some historical
-20D workflows still require an older BATTS commit; see
+[validation](docs/VALIDATION.md). New runs target BATTS 0.2.0; see
 [migration status](docs/MIGRATION_STATUS.md) before running them.
 This import is not a complete, validated rerun of the paper.
 
 ## Repositories and versions
 
 - Estimation package: [nawaya040/BATTS](https://github.com/nawaya040/BATTS).
-- Target package release: **v0.1.0**, commit
-  `ceb5fb6bb0045ab6b72f2a91c620a0b3c5bba3b0`.
+- Target package version: **0.2.0**, commit
+  `c4d194336bd0610372fe8d1b08caa7f94a7cd168`.
 - Simulation code and settings: this repository.
 - Case study: [yuliangxu/TwoSample](https://github.com/yuliangxu/TwoSample).
 
@@ -48,13 +47,13 @@ dir.create(".Rlib", showWarnings = FALSE)
 .libPaths(c(normalizePath(".Rlib"), .libPaths()))
 install.packages("remotes", lib = ".Rlib")
 remotes::install_github(
-  "nawaya040/BATTS@ceb5fb6bb0045ab6b72f2a91c620a0b3c5bba3b0",
+  "nawaya040/BATTS@c4d194336bd0610372fe8d1b08caa7f94a7cd168",
   lib = ".Rlib", dependencies = NA, upgrade = "never"
 )
 install.packages(c("ada", "rpart", "mvtnorm", "pracma"), lib = ".Rlib")
-stopifnot(as.character(packageVersion("BATTS")) == "0.1.0")
+stopifnot(as.character(packageVersion("BATTS")) == "0.2.0")
 stopifnot(packageDescription("BATTS")$RemoteSha ==
-  "ceb5fb6bb0045ab6b72f2a91c620a0b3c5bba3b0")
+  "c4d194336bd0610372fe8d1b08caa7f94a7cd168")
 ```
 
 A C++17 toolchain is required when building BATTS from source. See
@@ -78,8 +77,9 @@ its arguments and settings. A smoke result does not validate paper numbers.
 
 The imported coverage/boosting loaders record the installed package but do not
 enforce the target release themselves. Use the isolated, pinned library above.
-The historical 20D global/null guards still reject this release until their
-version contract is updated and reviewed.
+The 20D global/null new-run guard uses the fixed commit above. Historical
+result readers retain their old provenance checks; full workflow validation
+is tracked in migration status.
 
 ## Before full computation
 

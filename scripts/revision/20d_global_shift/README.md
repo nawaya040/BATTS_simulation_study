@@ -28,7 +28,7 @@ log(p0(x) / p1(x)) = -(U e1)' x / 1.01.
 
 The pilot evaluates `(n0, n1) = (5000, 5000)` and `(9000, 1000)` for seeds
 1--10. The installed BATTS package must report commit
-`6f625bad83702b36e5480be1ed1343258a9b075a`.
+`c4d194336bd0610372fe8d1b08caa7f94a7cd168`.
 
 ## Execution policy
 

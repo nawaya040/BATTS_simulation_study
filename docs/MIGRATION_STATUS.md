@@ -26,19 +26,20 @@ v0.1.0 at `ceb5fb6bb0045ab6b72f2a91c620a0b3c5bba3b0`.
 
 ### Old version constraints to resolve
 
-`scripts/revision/20d_global_shift/20d_global_shift_common.R:1` pins
-`6f625bad83702b36e5480be1ed1343258a9b075a`; `assert_batts_version()` checks
-`RemoteSha`. The pilot and canonical BAT runners use this check. Related
-summary/plot files also contain this historical identity:
+The new-run guard now pins BATTS 0.2.0 at `c4d194336bd0610372fe8d1b08caa7f94a7cd168`.
+`assert_batts_version()` checks `RemoteSha`; the pilot and canonical BAT
+runners use this check. Historical result readers still contain the old
+identity `6f625bad83702b36e5480be1ed1343258a9b075a`:
 
 - `plot_unbalanced_calibration_curve.R`
 - `summarize_20d_global_null_canonical.R`
 - `summarize_20d_global_shift_pilot.R`
 
 Do not replace historical result labels blindly: distinguish validation of old
-inputs from the identity required for newly generated outputs. Updating this
-contract and adding explicit version enforcement to other runners require a
-separate reviewed patch. None of those source changes was made during import.
+inputs from the identity required for newly generated outputs. Adding uniform version enforcement and updating readers for newly generated
+results remain part of the planned simulation infrastructure work. The API
+migration removes deleted arguments from all BAT calls; historical result
+metadata remains unchanged.
 
 ### Intentionally not imported
 

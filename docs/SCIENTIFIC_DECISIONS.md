@@ -31,3 +31,19 @@ saved draws and finite posterior means. This checks execution and dimensions;
 it does not establish MCMC convergence or validate paper results. Evidence is
 retained in the external run directory u18-mcmc-validation-20261001.
 Rollback: revert the dedicated U18 commit; preserve both generations of outputs.
+
+
+## 2026-10-01: BATTS 0.2.0 API simplification
+
+The author approved positive-integer thinning checks (U14), removal of
+update_lambda and alpha_cutpoint (U15/U21), and documenting U16 as a known
+numerical limitation with correction deferred. The dependent unused
+lambda_prior_parameters argument is also removed. Prediction matrix validation
+addresses U17. Simulation BAT calls now omit all removed arguments.
+New runs target BATTS commit c4d194336bd0610372fe8d1b08caa7f94a7cd168. Historical results
+keep their recorded package identity. U16 is not classified as fixed.
+
+The package's six balanced/unbalanced GB/FS/BAT small comparisons against
+0.1.0 had exactly identical fits, predictions and RNG states. Package input
+validation tests passed. Full simulation infrastructure migration remains open;
+this API change does not close all items in MIGRATION_STATUS.

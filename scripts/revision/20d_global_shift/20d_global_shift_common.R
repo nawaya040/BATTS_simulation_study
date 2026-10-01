@@ -1,4 +1,4 @@
-EXPECTED_BATTS_SHA <- "6f625bad83702b36e5480be1ed1343258a9b075a"
+EXPECTED_BATTS_SHA <- "c4d194336bd0610372fe8d1b08caa7f94a7cd168"
 
 required_packages <- c("BATTS", "digest", "matrixStats", "mvtnorm", "pracma")
 
@@ -302,7 +302,6 @@ run_global_shift_fit <- function(task, output_dir, source_paths) {
       max_resol = 0,
       learn_rate = 0.01,
       n_bins = 100,
-      alpha_cutpoint = 1,
       n_min_obs_per_node = 1,
       n_ratio_per_node = 1e-100,
       margin_scale = 0.1,
@@ -312,9 +311,7 @@ run_global_shift_fit <- function(task, output_dir, source_paths) {
       thin = 1,
       prob_moves = c(1 / 3, 1 / 3, 1 / 3),
       lambda_0 = 5,
-      lambda_prior_parameters = c(1, 1),
       omega_prior_parameters = c(1, 1),
-      update_lambda = FALSE,
       tree_priors = c(0.95, 2),
       output_BART_ensembles = FALSE,
       quiet = TRUE
