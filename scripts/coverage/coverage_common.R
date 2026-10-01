@@ -91,8 +91,8 @@ coverage_bart_settings <- function(mode, family) {
   if (identical(family, "1d")) {
     return(list(
       num_trees = 200L,
-      size_burnin = 1000L,
-      size_backfitting = 2000L,
+      size_burnin = 2000L,
+      size_backfitting = 1000L,
       lambda_0 = 5L
     ))
   }

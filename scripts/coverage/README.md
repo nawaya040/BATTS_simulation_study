@@ -82,3 +82,9 @@ Each job produces:
 
 Jobs are sequential internally. Parallelism belongs in the external scheduler,
 at the job level.
+
+Canonical MCMC settings are shared by 1D, 2D and 20D: 200 trees, 2000 burn-in
+iterations and 1000 retained draws. The 1D setting changed on 2026-10-01;
+existing 1D outputs with burn-in 1000 / retained 2000 require separate
+provenance and a rerun before reporting the new setting. See
+[scientific decisions](../../docs/SCIENTIFIC_DECISIONS.md).
