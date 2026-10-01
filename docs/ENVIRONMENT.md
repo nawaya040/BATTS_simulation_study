@@ -1,7 +1,7 @@
 # Environment
 
-Target BATTS version: 0.2.0, Git commit
-`c4d194336bd0610372fe8d1b08caa7f94a7cd168`.
+Target BATTS version: 0.2.1, Git commit
+`3644a83571c9ef8d9884886ab781ca3f027a731b`.
 
 The initial checks use Windows, R 4.5.2, Rtools45 / GCC 14.3.0,
 Rcpp 1.1.1.1 and RcppArmadillo 14.4.1.1. The BATTS build uses C++17.

@@ -14,5 +14,5 @@ study_config <- function(profile) {
        dimension_20d=20L, grid_2d=if(small) 20L else 100L,
        detail_seeds=1L, save_draws=TRUE,
        rng_kind=c('Mersenne-Twister','Inversion','Rejection'),
-       batts_sha='c4d194336bd0610372fe8d1b08caa7f94a7cd168')
+       batts_sha='3644a83571c9ef8d9884886ab781ca3f027a731b')
 }

@@ -6,8 +6,8 @@ It runs selected jobs, saves each job independently, and resumes only verified
 results from the same code, configuration and environment.
 
 The package is maintained separately at [nawaya040/BATTS](https://github.com/nawaya040/BATTS).
-This workflow pins BATTS **0.2.0**, commit
-`c4d194336bd0610372fe8d1b08caa7f94a7cd168`, and the submitted modified
+This workflow pins BATTS **0.2.1**, commit
+`3644a83571c9ef8d9884886ab781ca3f027a731b`, and the submitted modified
 `densratio` source under `vendor/`. Case-study work remains in
 [yuliangxu/TwoSample](https://github.com/yuliangxu/TwoSample).
 
