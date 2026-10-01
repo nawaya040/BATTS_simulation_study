@@ -5,7 +5,8 @@ through Additive Tree Models for Density Ratios*.
 
 **Status: initial source import for review.** This repository contains existing
 simulation workflows with their scientific source unchanged. Coverage and
-boosting smoke runs are being checked against BATTS 0.1.0. Some historical
+boosting smoke runs passed against BATTS 0.1.0; see
+[validation](docs/VALIDATION.md). Some historical
 20D workflows still require an older BATTS commit; see
 [migration status](docs/MIGRATION_STATUS.md) before running them.
 This import is not a complete, validated rerun of the paper.
