@@ -22,8 +22,7 @@ L_bal(t) = mean_group0(exp(-log r_t / 2))
          + mean_group1(exp( log r_t / 2)).
 ```
 
-The implementation stores the log loss for numerical stability. Fold log
-losses are averaged exactly as in the preceding exponential-loss audit.
+The implementation stores the log loss for numerical stability. Fold losses are averaged arithmetically with equal fold weights, using log-sum-exp to compute log(mean(loss)). The mean_log_exponential_loss and mean_log_balancing_loss fields contain the log of this arithmetic mean. Earlier commits averaged fold log losses (a geometric-mean criterion); changing this criterion can alter selected tree counts and downstream estimates.
 
 For the proposed GB and FS methods, the workflow records the selected number
 of trees, fold-level and aggregate CV curves, fold-level argmins, upper-bound

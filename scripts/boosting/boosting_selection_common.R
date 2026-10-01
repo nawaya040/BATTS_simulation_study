@@ -363,8 +363,8 @@ boosting_compute_ada_cv <- function(data, labels, fold_id, settings, seed_base) 
     fold_log_exponential_loss = log_exponential,
     fold_log_balancing_loss = log_balancing,
     mean_classification_error = colMeans(class_error),
-    mean_log_exponential_loss = colMeans(log_exponential),
-    mean_log_balancing_loss = colMeans(log_balancing)
+    mean_log_exponential_loss = boosting_log_mean_exp_columns(log_exponential),
+    mean_log_balancing_loss = boosting_log_mean_exp_columns(log_balancing)
   )
 }
 
