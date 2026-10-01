@@ -68,3 +68,12 @@ The original checkout and official results remain unchanged. The first source
 import commit in this repository is the migration baseline. Future patches
 must update the status here and keep their provenance distinct from the
 unchanged source import.
+
+
+## Post-import scientific changes
+
+AdaBoost fold losses are now averaged arithmetically using log-sum-exp
+(independent audit U13; author approved). The fixed-seed balanced/unbalanced
+2D comparison and exact commits are documented in
+[paired validation](ADABOOST_CV_ARITHMETIC_VALIDATION.md). The original
+SOURCE_MANIFEST remains a record of the unchanged initial import.

@@ -3,8 +3,9 @@
 Simulation development and review repository for *Two-sample Comparison
 through Additive Tree Models for Density Ratios*.
 
-**Status: initial source import for review.** This repository contains existing
-simulation workflows with their scientific source unchanged. Coverage and
+**Status: simulation development and review.** The initial import preserved
+the existing scientific source. AdaBoost CV now uses arithmetic mean fold
+loss; see [paired validation](docs/ADABOOST_CV_ARITHMETIC_VALIDATION.md). Coverage and
 boosting smoke runs passed against BATTS 0.1.0; see
 [validation](docs/VALIDATION.md). Some historical
 20D workflows still require an older BATTS commit; see
