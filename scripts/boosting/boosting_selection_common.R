@@ -502,8 +502,7 @@ boosting_ada_node_summary <- function(model, selections) {
 boosting_run_proposed <- function(data, labels, truth_train, settings,
                                   use_gradient, seed, method_name) {
   expected_fold_id <- boosting_make_stratified_folds(labels, settings$folds, seed)
-  set.seed(seed)
-  fit <- BATTS::boots(
+  arguments <- list(
     data = data,
     group_labels = labels,
     num_trees_max = settings$max_trees,
@@ -513,6 +512,13 @@ boosting_run_proposed <- function(data, labels, truth_train, settings,
     use_gradient = use_gradient,
     quiet = TRUE
   )
+  # Per-tree subsampling as in Ada's bag.frac (BATTS >= 0.2.2). Settings
+  # without this entry keep the full-training-set call of earlier runners.
+  if (!is.null(settings$proposed_subsample_fraction)) {
+    arguments$subsample_fraction <- settings$proposed_subsample_fraction
+  }
+  set.seed(seed)
+  fit <- do.call(BATTS::boots, arguments)
   cv <- fit$loss_CV_store
   selected <- length(fit$tree_list)
   aggregate_selected <- which.min(colMeans(cv))
@@ -523,6 +529,8 @@ boosting_run_proposed <- function(data, labels, truth_train, settings,
   list(
     diagnostics = list(
       method = method_name,
+      subsample_fraction = if (is.null(arguments$subsample_fraction)) 1 else
+        arguments$subsample_fraction,
       selected_trees = selected,
       maximum_tree_hit = selected == settings$max_trees,
       fold_id = expected_fold_id,

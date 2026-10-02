@@ -16,7 +16,10 @@ Paper uses seeds 1–50; smoke uses seed 1. BAT uses 200 trees, burn-in 2000 and
 1000 saved draws in every paper dimension, with lambda 5. Smoke uses 20 trees,
 burn-in 20 and 40 saved draws. GB/FS/Ada use five folds and at most 1000 trees
 for paper; smoke uses two folds and at most 60 trees. Rate .01 and depth 4
-are unchanged. Ada uses bag fraction .5. KLIEP/uLSIF use the vendored defaults;
+are unchanged. Ada uses bag fraction .5. GB/FS build each tree from a
+random half of the training observations drawn in the same way (BATTS 0.2.2
+`subsample_fraction = .5`: one per group, the rest unstratified, without
+replacement); the 1D fixed-tree GB uses all observations. KLIEP/uLSIF use the vendored defaults;
 their parameter grids are preserved even in smoke runs.
 
 For 2D/20D the methods are BAT, GB, FS, Ada DRT, KLIEP, uLSIF and CDC.

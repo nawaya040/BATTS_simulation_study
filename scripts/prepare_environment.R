@@ -21,7 +21,7 @@ if(!is.null(a[['batts-source']])) {
   remotes::install_github(paste0('nawaya040/BATTS@',sha),lib=lib,dependencies=FALSE,upgrade='never')
 }
 install.packages(file.path(root,'vendor/densratio'),lib=lib,repos=NULL,type='source')
-if(as.character(packageVersion('BATTS',lib.loc=lib))!='0.2.1' ||
+if(as.character(packageVersion('BATTS',lib.loc=lib))!='0.2.2' ||
    as.character(packageVersion('densratio',lib.loc=lib))!='0.2.1') stop('Source installation failed')
 receipt<-list(schema=1L,batts_sha=sha,
   densratio_source=study_files_hash(file.path(root,'vendor/densratio'),sort(list.files(file.path(root,'vendor/densratio'),recursive=TRUE))),
