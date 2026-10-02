@@ -8,7 +8,7 @@ approved estimators and CV rules. It does not introduce a new estimator.
 | Family | Paper settings | Smoke settings |
 | --- | --- | --- |
 | 1D BAT | (500,500), (100,900), (2500,2500), (500,4500) | (40,40), (16,64) |
-| 1D fixed Ada/GB | (500,500), (300,700), (200,800), (100,900); 100 trees, depth 2, rate .01, no CV | Smaller groups, same fixed tree specification |
+| 1D fixed Ada/GB | (500,500), (300,700), (200,800), (100,900); 100 trees, depth 2, rate .01, no CV, subsample .5 for both | Smaller groups, same fixed tree specification |
 | 2D | global shift, local shift, local dispersion; (5000,5000), (9000,1000) | Same scenarios; (40,40), (72,8) |
 | 20D | global shift, null, latent location shift, latent dispersion; both transforms and both 2D sample-size settings | Same scenarios/transforms and 20 dimensions; smoke sample sizes |
 
@@ -19,7 +19,7 @@ for paper; smoke uses two folds and at most 60 trees. Rate .01 and depth 4
 are unchanged. Ada uses bag fraction .5. GB/FS build each tree from a
 random half of the training observations drawn in the same way (BATTS 0.2.2
 `subsample_fraction = .5`: one per group, the rest unstratified, without
-replacement); the 1D fixed-tree GB uses all observations. KLIEP/uLSIF use the vendored defaults;
+replacement), also in the 1D fixed-tree comparison. KLIEP/uLSIF use the vendored defaults;
 their parameter grids are preserved even in smoke runs.
 
 For 2D/20D the methods are BAT, GB, FS, Ada DRT, KLIEP, uLSIF and CDC.

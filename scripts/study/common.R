@@ -197,7 +197,8 @@ study_fit <- function(row,input,config,root,runroot,run_id) {
       drt<-log(probability[,1]/probability[,2]*row$n1/row$n0)
       grid_drt<-log(gridprob[,1]/gridprob[,2]*row$n1/row$n0)
       fit<-BATTS::boots(data=x,group_labels=g,num_trees=s$num_trees,K_CV=0L,
-        max_resol=s$depth,learn_rate=s$learn_rate,n_bins=s$n_bins,use_gradient=TRUE,quiet=TRUE)
+        max_resol=s$depth,learn_rate=s$learn_rate,n_bins=s$n_bins,use_gradient=TRUE,quiet=TRUE,
+        subsample_fraction=s$subsample_fraction)
       gb<-2*log(fit$balance_weight_boosting_data)
       points<-sim$grid_points
       inside<-apply(sweep(points,2,fit$Omega[,1],'>=') & sweep(points,2,fit$Omega[,2],'<='),1,all)
