@@ -34,9 +34,22 @@ v<-rec$value;v$grid$inside[1]<-!v$grid$inside[1];reject(v,'grid schema')
 v<-rec$value;v$grid$truth[1]<-999;reject(v,'grid schema')
 v<-rec$value;v$grid<-NULL;reject(v,'grid schema')
 v<-rec$value;v$domain[1,1]<-v$domain[1,1]-1;reject(v,'metadata')
-# Non-detail runs have no forests, but temperature checks still apply.
-row2<-rec$row;row2$seed<-2L;v<-rec$value;v$forests<-NULL;v$grid<-NULL
+# Non-detail seeds keep forests (count-checked) and skip re-evaluation.
+row2<-rec$row;row2$seed<-2L;v<-rec$value;v$grid<-NULL
 study_validate_bat_saved(v,sim,row2,config)
+v2<-v;v2$forests<-NULL
+error<-tryCatch({study_validate_bat_saved(v2,sim,row2,config);NA_character_},error=conditionMessage)
+stopifnot(!is.na(error),grepl('forest count',error,fixed=TRUE))
+v2<-v;v2$forests[[1]]<-v2$forests[[1]][-1]
+error<-tryCatch({study_validate_bat_saved(v2,sim,row2,config);NA_character_},error=conditionMessage)
+stopifnot(!is.na(error),grepl('forest count',error,fixed=TRUE))
+# Without saved draws, detail forests must reproduce the saved summaries.
+stopifnot(is.null(rec$value$draws))
+v<-rec$value;v$estimates$primary[1]<-v$estimates$primary[1]+1;reject(v,'estimates/quantiles')
+v<-rec$value;v$quantiles[1,2]<-v$quantiles[1,2]+1;reject(v,'estimates/quantiles')
+cfg<-config;cfg$save_draws<-TRUE
+error<-tryCatch({study_validate_bat_saved(rec$value,sim,rec$row,cfg);NA_character_},error=conditionMessage)
+stopifnot(!is.na(error),grepl('Missing BAT draws',error,fixed=TRUE))
 # Route a rehashed inconsistent fixture through the complete validator.
 base<-tempfile('batts-u24-');dir.create(base)
 fixture<-file.path(base,'invalid-fixture');stopifnot(!dir.exists(fixture))

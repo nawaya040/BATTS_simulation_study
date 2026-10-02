@@ -19,9 +19,13 @@ SHA-256. Writes use a temporary file in the same directory followed by rename.
 There is a brief interval between result and sidecar writes; interruption there
 produces an explicitly incomplete pair that validation rejects.
 
-Full BAT draws alone occupy approximately 92.8 GB uncompressed for the paper
-grid; forests and other outputs require additional space. Actual gzip size is
-data-dependent. Plan storage before scheduling the run. Validation reads one
+BAT results save posterior forests for every seed instead of observed-point
+draws (`save_forests=TRUE`, `save_draws=FALSE`): about 7 MB per paper-size job
+(gzip) instead of 50-75 MB, roughly 11 GB for all BAT jobs. Posterior means,
+quantiles and coverage are still computed from the exact draws during fitting.
+`study_bat_draws()` reconstructs observed-point draws from a saved forest and
+the case input, to floating-point accuracy (not bitwise); this takes about a
+minute per paper-size job. Actual gzip size is data-dependent. Plan storage before scheduling the run. Validation reads one
 result at a time, retaining compact per-seed metrics and only the designated
 figure inputs; it does not accumulate all posterior samples in memory.
 
@@ -47,8 +51,9 @@ a new output root; results from the old root remain available for comparison.
 ## Aggregation
 
 Validation checks hashes, planned job identities, common input hashes, group
-counts, estimate variants and dimensions, recalculated MSE, BAT draws/quantiles/
-coverage, boosting fold allocation and CDC dependencies. It also rejects orphan
+counts, estimate variants and dimensions, recalculated MSE, BAT forest counts
+(all seeds) and forest-reproduced estimates/quantiles/coverage (detail seeds, or
+draws/quantiles/coverage when draws are saved), boosting fold allocation and CDC dependencies. It also rejects orphan
 sidecars and unexpected jobs. This protects against accidental mismatches and
 incomplete files; hashes are not a cryptographic signature from an external authority.
 

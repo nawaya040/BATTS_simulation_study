@@ -29,17 +29,40 @@ study_saved_tree_weights <- function(tree, points) {
   weight
 }
 
+# Log-ratio draws (points x saved draws) from a saved posterior forest.
+# raw_points are on the data scale; they must lie inside value$domain.
+study_bat_forest_predict <- function(value, raw_points) {
+  domain<-value$domain
+  points<-sweep(sweep(as.matrix(raw_points),2,domain[,1],'-'),2,domain[,2]-domain[,1],'/')
+  out<-matrix(NA_real_,nrow(points),length(value$forests))
+  for(s in seq_along(value$forests)) {
+    w<-rep(1,nrow(points))
+    for(tree in value$forests[[s]]) w<-w*study_saved_tree_weights(tree,points)
+    out[,s]<-2*log(value$fit_c*w)
+  }
+  out
+}
+# Reconstruct the observed-point BAT draws of a saved result from its forest.
+# Agrees with the draws of the fit to floating-point accuracy (not bitwise).
+study_bat_draws <- function(value, sim) study_bat_forest_predict(value, sim$data)
+
 study_validate_bat_saved <- function(value, sim, row, config) {
   count<-config$bat$size_backfitting
   if(!is.numeric(value$omega)||length(value$omega)!=count||
      any(!is.finite(value$omega))||any(value$omega<=0)||
      !identical(1/value$omega,value$tau_inverse)) stop('Temperature draws mismatch')
-  if(!is.matrix(value$draws)||!is.numeric(value$draws)||any(!is.finite(value$draws)))
+  if(is.null(value$draws)) {
+    if(isTRUE(config$save_draws)) stop('Missing BAT draws')
+  } else if(!is.matrix(value$draws)||!is.numeric(value$draws)||any(!is.finite(value$draws)))
     stop('Invalid BAT draws')
-  if(!row$seed %in% config$detail_seeds) return(invisible(TRUE))
-  if(!is.list(value$forests)||length(value$forests)!=count||
-     any(!vapply(value$forests,is.list,logical(1)))||
-     any(lengths(value$forests)!=config$bat$num_trees)) stop('Posterior forest count mismatch')
+  detail<-row$seed %in% config$detail_seeds
+  if(detail || isTRUE(config$save_forests)) {
+    if(!is.list(value$forests)||length(value$forests)!=count||
+       any(!vapply(value$forests,is.list,logical(1)))||
+       any(lengths(value$forests)!=config$bat$num_trees)) stop('Posterior forest count mismatch')
+  }
+  # Re-evaluating every forest is costly; it is done for the detail seeds.
+  if(!detail) return(invisible(TRUE))
   x<-as.matrix(sim$data); domain<-value$domain
   if(!is.matrix(domain)||!is.numeric(domain)||!identical(dim(domain),c(ncol(x),2L))||
      any(!is.finite(domain))||any(domain[,2]<=domain[,1])||
@@ -62,18 +85,23 @@ study_validate_bat_saved <- function(value, sim, row, config) {
       ngrid<-sum(inside);points<-rbind(points,gp[inside,,drop=FALSE])
     } else if(!is.null(value$grid)) stop('Unexpected saved grid')
   } else if(!is.null(value$grid)) stop('Unexpected saved grid')
-  points<-sweep(sweep(points,2,domain[,1],'-'),2,domain[,2]-domain[,1],'/')
-  grid_draws<-matrix(NA_real_,ngrid,count)
-  for(s in seq_len(count)) {
-    w<-rep(1,nrow(points))
-    for(tree in value$forests[[s]]) w<-w*study_saved_tree_weights(tree,points)
-    pred<-2*log(value$fit_c*w)
-    if(any(!is.finite(pred))||
-       !isTRUE(all.equal(as.numeric(pred[seq_len(nobs)]),as.numeric(value$draws[,s]),
+  pred<-study_bat_forest_predict(value,points)
+  if(any(!is.finite(pred))) stop('Posterior forests give nonfinite predictions')
+  obs_draws<-pred[seq_len(nobs),,drop=FALSE]
+  if(!is.null(value$draws)) {
+    if(!isTRUE(all.equal(as.numeric(obs_draws),as.numeric(value$draws),
                          tolerance=1e-10,check.attributes=FALSE)))
       stop('Posterior forests disagree with observed draws')
-    if(ngrid) grid_draws[,s]<-pred[nobs+seq_len(ngrid)]
+  } else {
+    # Without saved draws, the forests must reproduce the saved summaries.
+    q_obs<-t(apply(obs_draws,1,quantile,probs=c(.025,.5,.975)))
+    if(!isTRUE(all.equal(rowMeans(obs_draws),as.numeric(value$estimates$primary),tolerance=1e-10,check.attributes=FALSE))||
+       !isTRUE(all.equal(q_obs,value$quantiles,tolerance=1e-10,check.attributes=FALSE)))
+      stop('Posterior forests disagree with saved estimates/quantiles')
+    if(!identical(coverage_compute(obs_draws,as.numeric(sim$true_log_w_obs)),value$coverage))
+      stop('Posterior forests disagree with saved coverage')
   }
+  grid_draws<-pred[nobs+seq_len(ngrid),,drop=FALSE]
   if(ngrid) {
     q<-t(apply(grid_draws,1,quantile,probs=c(.025,.5,.975)))
     if(!isTRUE(all.equal(rowMeans(grid_draws),value$grid$mean,tolerance=1e-10,check.attributes=FALSE))||
@@ -133,12 +161,16 @@ study_validate <- function(runroot,require_complete=FALSE,retain_draws=FALSE) {
       boosting_metric_row(row$method,variant,'train',value$estimates[[variant]],as.numeric(sim$true_log_w_obs),as.integer(sim$group_labels))))
     if(!isTRUE(all.equal(value$metrics,metrics,tolerance=0))) stop('Stored metrics disagree with result body')
     if(row$method=='bat') {
-      if(!identical(dim(value$draws),c(nrow(sim$data),run$identity$config$bat$size_backfitting)) ||
-         !isTRUE(all.equal(rowMeans(value$draws),value$estimates$primary,tolerance=0))) stop('BAT draws mismatch')
-      q<-t(apply(value$draws,1,quantile,probs=c(.025,.5,.975)))
-      if(!identical(q,value$quantiles)) stop('Posterior quantiles disagree with draws')
+      if(!is.null(value$draws)) {
+        if(!identical(dim(value$draws),c(nrow(sim$data),run$identity$config$bat$size_backfitting)) ||
+           !isTRUE(all.equal(rowMeans(value$draws),value$estimates$primary,tolerance=0))) stop('BAT draws mismatch')
+        q<-t(apply(value$draws,1,quantile,probs=c(.025,.5,.975)))
+        if(!identical(q,value$quantiles)) stop('Posterior quantiles disagree with draws')
+      } else if(!is.matrix(value$quantiles)||!identical(dim(value$quantiles),c(nrow(sim$data),3L))||
+                any(!is.finite(value$quantiles))||!is.list(value$coverage)) stop('BAT summary dimensions mismatch')
       study_validate_bat_saved(value,sim,row,run$identity$config)
-      if(!identical(coverage_compute(value$draws,as.numeric(sim$true_log_w_obs)),value$coverage)) stop('Coverage mismatch')
+      if(!is.null(value$draws) &&
+         !identical(coverage_compute(value$draws,as.numeric(sim$true_log_w_obs)),value$coverage)) stop('Coverage mismatch')
     }
     if(row$method %in% c('gb','fs','ada')) {
       fold<-if(row$method=='ada') value$fold_id else value$diagnostics$fold_id

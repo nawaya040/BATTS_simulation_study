@@ -14,7 +14,7 @@ study_config <- function(profile) {
        fixed_1d=list(num_trees=100L, depth=2L, learn_rate=.01, n_bins=100L,
                      subsample_fraction=.5),
        dimension_20d=20L, grid_2d=if(small) 20L else 100L,
-       detail_seeds=1L, save_draws=TRUE,
+       detail_seeds=1L, save_draws=FALSE, save_forests=TRUE,
        rng_kind=c('Mersenne-Twister','Inversion','Rejection'),
        batts_sha='77c217297910a5ba50b71313e8289d9024b669c9')
 }

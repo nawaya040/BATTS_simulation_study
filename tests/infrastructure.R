@@ -70,9 +70,14 @@ for(family in c('1d','2d')) {
   if(family=='1d') assign('.Random.seed',input$rng_after_data,globalenv()) else set.seed(rec$row$seed)
   fit<-do.call(BATTS::batts,c(list(data=sim$data,group_labels=as.integer(sim$group_labels),quiet=TRUE,
     output_BART_ensembles=TRUE),checked$run$identity$config$bat))
-  stopifnot(identical(2*log(fit$balance_weight_BART_data),rec$value$draws))
+  direct<-2*log(fit$balance_weight_BART_data)
+  stopifnot(identical(rowMeans(direct),rec$value$estimates$primary),
+            identical(t(apply(direct,1,quantile,probs=c(.025,.5,.975))),rec$value$quantiles),
+            identical(fit$forest_list,rec$value$forests))
+  if(!is.null(rec$value$draws)) stopifnot(identical(direct,rec$value$draws))
+  stopifnot(isTRUE(all.equal(study_bat_draws(rec$value,sim),direct,tolerance=1e-10)))
 }
-ok('1D and 2D BAT draws exactly equal direct package calls')
+ok('1D and 2D BAT summaries and forests exactly equal direct package calls')
 # Numerical fit and RNG equivalence to existing GB/FS/Ada helpers on one case.
 for(method in c('gb','fs','ada')) {
   rec<-checked$records[[paste0(case,'__',method)]]

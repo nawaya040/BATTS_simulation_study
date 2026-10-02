@@ -58,16 +58,17 @@ to avoid stochastic extrapolation during result export.
 
 | Paper content | Stored inputs for new runs |
 | --- | --- |
-| 1D posterior curves and temperature | Full observed-point draws, quantiles, omega and inverse omega; seed-1 grid predictions and forests |
+| 1D posterior curves and temperature | Posterior forests (all seeds), means, quantiles, omega and inverse omega; seed-1 grid predictions |
 | 1D fixed-tree Ada/GB comparison (S1) | Both observed-point estimates and grid curves, truth, Ada probabilities and fixed settings |
-| 2D surfaces and credible intervals | Data, truth, full observed-point draws, seed-1 grid predictions and forests |
+| 2D surfaces and credible intervals | Data, truth, posterior forests (all seeds), seed-1 grid predictions |
 | 20D generated data and latent projections | Observed/latent data, loading matrix and pre-transform data for latent scenarios |
-| Coverage/calibration and localization | Full BAT draws, per-seed coverage at 99 nominal levels, 95% zero-exclusion indicators derived from quantiles |
+| Coverage/calibration and localization | Per-seed coverage at 99 nominal levels computed from the exact draws during fitting, 95% zero-exclusion indicators derived from quantiles; forests allow draw reconstruction |
 | MSE tables | Per-method/per-variant/per-seed symmetric training MSE, finite/failed counts and MCSE |
 
 `summarize_study.R` exports these numerical summaries and a diagnostic PDF from
-validated saved objects, with no estimator rerun. Seed 1 retains forests for
-later figure grids; every seed retains observed-point BAT draws. Detailed
+validated saved objects, with no estimator rerun. Every seed retains BAT
+posterior forests (observed-point draws are reconstructed with `study_bat_draws()`);
+seed 1 additionally retains grid predictions. Detailed
 forests can be large in paper runs, so reserve disk space before starting them.
 
 Exact historic manuscript layouts and standalone illustrative datasets (such

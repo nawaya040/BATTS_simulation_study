@@ -209,8 +209,11 @@ study_fit <- function(row,input,config,root,runroot,run_id) {
           ada=grid_drt,gb=grid_gb,inside=inside),probability=probability)
     } else if(method=='bat') {
       if(row$family=='1d') assign('.Random.seed',input$rng_after_data,globalenv()) else set.seed(row$seed)
+      # Saving forests does not change the draws; they replace saved draws
+      # (study_bat_draws() reconstructs draws from a saved forest).
+      keep_forests<-isTRUE(config$save_forests) || row$seed %in% config$detail_seeds
       fit<-do.call(BATTS::batts,c(list(data=x,group_labels=g,quiet=TRUE,
-        output_BART_ensembles=row$seed %in% config$detail_seeds),config$bat))
+        output_BART_ensembles=keep_forests),config$bat))
       draws<-2*log(fit$balance_weight_BART_data)
       if(any(!is.finite(draws))) stop('Nonfinite BAT draws')
       estimate<-rowMeans(draws)
@@ -228,7 +231,7 @@ study_fit <- function(row,input,config,root,runroot,run_id) {
       list(estimates=list(primary=estimate),coverage=coverage_compute(draws,truth),
         quantiles=quantiles,omega=fit$omega_store,tau_inverse=1/fit$omega_store,
         draws=if(config$save_draws) draws else NULL,grid=grid,
-        forests=if(row$seed %in% config$detail_seeds) fit$forest_list else NULL,
+        forests=if(keep_forests) fit$forest_list else NULL,
         fit_c=fit$c,domain=fit$Omega,data_info=fit$data_info)
     } else if(method %in% c('gb','fs')) {
       z<-boosting_run_proposed(x,g,truth,settings,method=='gb',seed_map$folds,method)
