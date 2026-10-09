@@ -83,6 +83,24 @@ jobs. Summary directories must be new. Outputs include MSE/MCSE, failure counts,
 coverage and localization CSVs, diagnostic PDF pages, and a manifest linking
 the input and output hashes. Every MSE table carries a smoke/paper label.
 
+### Combining run roots
+
+When one canonical plan is executed in several run roots (for example with
+different worker counts), summarize them together:
+
+```text
+Rscript scripts/summarize_combined.R --run-dirs=ROOT_A,ROOT_B,ROOT_C --output-dir=output/summary-combined --expected-missing-methods=ulsif
+```
+
+Every root is validated in full. The roots must share the plan, the configuration
+apart from storage options (`save_draws`, `save_forests`), seeds, RNG kind and
+BATTS commit; shared cases must have identical input-data hashes. A job present in
+several roots must have identical estimates, metrics and final RNG state (the first
+listed root is used). Planned jobs of other methods than the expected-missing ones
+must all be present. The output has the same files as `summarize_study.R`, plus
+`combined-roots.csv`, `combined-duplicates.csv` and the merge record in
+`summary-manifest.rds`. No estimator is rerun.
+
 ## Scope and evidence
 
 - [Settings, seeds, saved objects and figure inputs](docs/STUDY_CONTRACT.md)

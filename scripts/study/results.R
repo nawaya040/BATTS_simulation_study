@@ -133,7 +133,7 @@ study_validate <- function(runroot,require_complete=FALSE,retain_draws=FALSE) {
   if(anyDuplicated(jobs)||any(!jobs%in%plan$job)) stop('Unexpected or duplicate result jobs')
   if(any(!file.exists(sub('[.]manifest[.]rds$','',paths[grepl('[.]manifest[.]rds$',paths)])))) stop('Manifest without result')
   if(require_complete && !setequal(jobs,plan$job)) stop('Full plan is incomplete: ',nrow(plan)-length(jobs),' jobs missing')
-  records<-list(); inputs<-list();active_case<-NULL;active_input<-NULL
+  records<-list(); inputs<-list();input_hashes<-list();active_case<-NULL;active_input<-NULL
   for(i in seq_along(files)) {
     row<-as.list(plan[match(jobs[i],plan$job),])
     if(!identical(active_case,row$case)) {
@@ -145,7 +145,7 @@ study_validate <- function(runroot,require_complete=FALSE,retain_draws=FALSE) {
       if(!identical(hash,input$hash)) stop('Input data hash mismatch')
       if(nrow(sim$data)!=row$n0+row$n1 || !identical(as.integer(table(factor(sim$group_labels,levels=0:1))),c(row$n0,row$n1)))
         stop('Input dimensions/group counts mismatch')
-      active_case<-row$case;active_input<-input
+      active_case<-row$case;active_input<-input;input_hashes[[row$case]]<-input$hash
       if(row$seed %in% run$identity$config$detail_seeds) inputs[[row$case]]<-input
     }
     input<-active_input;sim<-input$simulation
@@ -197,7 +197,7 @@ study_validate <- function(runroot,require_complete=FALSE,retain_draws=FALSE) {
     records[[row$job]]<-list(row=row,value=value,sha256=study_hash_file(files[i]))
   }
   list(run=run,records=records,inputs=inputs,missing=setdiff(plan$job,jobs),
-       complete=setequal(jobs,plan$job),run_id=run_id)
+       complete=setequal(jobs,plan$job),run_id=run_id,input_hashes=input_hashes)
 }
 study_summarize <- function(checked) {
   records<-checked$records
@@ -222,4 +222,66 @@ study_summarize <- function(checked) {
   }))
   rownames(summary)<-NULL
   list(metrics=metrics,summary=summary)
+}
+
+# Merge per-root lists of case -> input-data hash; a case must hash identically everywhere.
+study_merge_input_hashes <- function(hash_lists) {
+  hashes<-list()
+  for(hl in hash_lists) for(case in names(hl)) {
+    if(!is.null(hashes[[case]]) && !identical(hashes[[case]],hl[[case]])) stop('Input data differ across roots for case ',case)
+    hashes[[case]]<-hl[[case]]
+  }
+  hashes
+}
+# Combine validated results of several run roots that execute parts of the same
+# canonical plan (e.g. different worker counts). Every root is validated in full.
+# Roots must share the plan, the configuration apart from storage options, the
+# seeds, the RNG kind and the BATTS commit, and shared cases must have identical
+# input-data hashes. A job present in several roots must have identical
+# estimates, metrics and final RNG state; the first listed root is then used.
+# Jobs of expected_missing_methods may be absent; any other absent job stops.
+study_combine <- function(runroots, expected_missing_methods=character()) {
+  if(length(runroots)<2 || anyDuplicated(runroots)) stop('Combining needs at least two distinct run roots')
+  checks<-lapply(runroots,function(r) study_validate(r))
+  base<-checks[[1]]$run
+  storage<-c('save_draws','save_forests')
+  strip<-function(cfg) cfg[setdiff(names(cfg),storage)]
+  for(k in seq_along(checks)[-1]) {
+    run<-checks[[k]]$run
+    if(!identical(run$plan,base$plan)) stop('Run plans differ: ',runroots[k])
+    if(!identical(strip(run$identity$config),strip(base$identity$config)))
+      stop('Configurations differ beyond storage options: ',runroots[k])
+    if(!identical(run$identity$rng,base$identity$rng)) stop('RNG kind differs: ',runroots[k])
+  }
+  hashes<-study_merge_input_hashes(lapply(checks,`[[`,'input_hashes'))
+  records<-list(); inputs<-list(); source<-character()
+  duplicates<-data.frame(job=character(),used_root=character(),other_root=character(),identical=logical())
+  for(k in seq_along(checks)) {
+    for(job in names(checks[[k]]$records)) {
+      if(is.null(records[[job]])) {
+        records[[job]]<-checks[[k]]$records[[job]]; source[[job]]<-runroots[k]; next
+      }
+      read_value<-function(root) study_read_result(file.path(root,'results',paste0(job,'.rds')))$value
+      a<-read_value(source[[job]]); b<-read_value(runroots[k])
+      same<-identical(a$estimates,b$estimates) && identical(a$metrics,b$metrics) && identical(a$rng_final,b$rng_final)
+      if(!same) stop('Duplicate job differs between roots: ',job)
+      duplicates<-rbind(duplicates,data.frame(job=job,used_root=source[[job]],other_root=runroots[k],identical=TRUE))
+    }
+    for(case in names(checks[[k]]$inputs)) if(is.null(inputs[[case]])) inputs[[case]]<-checks[[k]]$inputs[[case]]
+  }
+  plan<-base$plan
+  missing<-setdiff(plan$job,names(records))
+  unexpected<-setdiff(missing,plan$job[plan$method %in% expected_missing_methods])
+  if(length(unexpected)) stop(length(unexpected),' planned jobs are missing outside the expected methods, e.g. ',unexpected[1])
+  records<-records[plan$job[plan$job %in% names(records)]]
+  roots<-data.frame(root=runroots,run_id=vapply(checks,`[[`,'',"run_id"),
+    commit=vapply(checks,function(x) as.character(x$run$identity$source$commit)[1],''),
+    workers=vapply(checks,function(x) as.integer(x$run$identity$workers),0L),
+    validated=vapply(checks,function(x) length(x$records),0L),
+    used=vapply(runroots,function(r) sum(source==r),0L),stringsAsFactors=FALSE)
+  list(run=base,records=records,inputs=inputs,missing=missing,complete=length(missing)==0,
+       run_id=study_hash(roots$run_id),input_hashes=hashes,
+       combined=list(roots=roots,source=source,duplicates=duplicates,
+         expected_missing_methods=expected_missing_methods,
+         missing_by_method=table(plan$method[plan$job %in% missing])))
 }
