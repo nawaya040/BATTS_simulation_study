@@ -7,10 +7,13 @@ estimator. Case-study figures (Section 5) are not produced here.
 1. `prepare_paper_figure_inputs.R` reads only the results listed in the
    summary manifest, checks each result and input hash, and writes the
    intermediate files that the original drawing scripts expect.
-2. `draw/` holds the Round 2 drawing scripts, copied without modification
-   from the reproducibility package (`code/r2/scripts/figures/` and
-   `code/portable/`). Given the Round 2 inputs, they reproduce the submitted
-   PDFs pixel for pixel at 110 dpi with ggplot2 4.0.3 and patchwork 1.3.2.
+2. `draw/` holds the Round 2 drawing scripts, copied from the reproducibility
+   package (`code/r2/scripts/figures/` and `code/portable/`). The only change
+   (author-approved, 2026-10-13) removes the pinned Round 2 input hashes from
+   `plot_figure4_compact_preview.R` and `plot_supplement_s4.R`; their input
+   hashes are still recorded in `validation.txt`. Drawing code is unchanged.
+   Given the Round 2 inputs, all scripts reproduce the submitted PDFs pixel
+   for pixel at 110 dpi with ggplot2 4.0.3 and patchwork 1.3.2.
 
 ```text
 Rscript scripts/figures/paper/make_paper_figures.R --summary-dir=SUMMARY --output-dir=NEW_DIR

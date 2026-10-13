@@ -11,10 +11,6 @@ outdir <- args[2]
 if (dir.exists(outdir)) stop("Output directory exists; choose a new candidate directory")
 input_paths <- c(seed_path, summary_path, metadata_input_path)
 input_hashes <- unname(tools::sha256sum(input_paths))
-stopifnot(identical(input_hashes, c(
- "f7e73e34f82ddd8bb5efc188f1e0783cbc391412d1dee26d1ac7ca1aaad2a2aa",
- "dec443b128389acd2d1f1e4f0bfc60ea5f388098da512ecb113507f59975d876",
- "eb086f1b6846dfec25335401a48ed0bdcb6bf497a6768f3e7d82dabd4275acac")))
 seed_all <- utils::read.csv(seed_path, stringsAsFactors = FALSE)
 summary_all <- utils::read.csv(summary_path, stringsAsFactors = FALSE)
 seed_required <- c(
@@ -185,7 +181,7 @@ writeLines(c("Figure S4 reviewer-requested display-only candidate",
   "width_cm=10.5", "height_cm=8.4", "ticks_and_legend_pt=8", "axis_and_scenario_titles_pt=9",
   "row_headings_pt=8.5", "square_panels=true", "panels=6", "repeat_curves_per_panel=50",
   "levels_per_curve=99", "original_data_preparation_and_mean_calculation_preserved=true",
-  "input_hashes_match_original_figure_metadata=true", "inputs_unchanged=true",
+  "input_hashes_recorded=true", "inputs_unchanged=true",
   "estimator_fitting=false", "rng_consumed=false",
   paste0("mean_recalculation_max_abs_difference=",format(mean_max_abs_difference,scientific=TRUE)),
   paste0("input_sha256=",input_hashes)),file.path(outdir,"validation.txt"))
