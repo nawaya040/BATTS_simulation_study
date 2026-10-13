@@ -23,6 +23,11 @@ found<-vapply(names(expected),function(p) as.character(utils::packageVersion(p))
 if(!identical(unname(found),unname(expected))) stop('Drawing package versions differ: ',paste(names(found),found,collapse=', '))
 dir.create(out,recursive=TRUE); out<-normalizePath(out,winslash='/')
 started<-Sys.time()
+git<-function(...) tryCatch(system2('git',c('-C',repo,...),stdout=TRUE),error=function(e) NA_character_)
+# Record the checkout before running; drawing devices may leave Rplots.pdf in
+# the working directory, so the steps run inside the output directory.
+commit<-git('rev-parse','HEAD'); dirty<-length(git('status','--porcelain'))>0L
+setwd(out)
 rscript<-file.path(R.home('bin'),'Rscript')
 run<-function(...) {
   status<-system2(rscript,c('--vanilla',...))
@@ -61,13 +66,12 @@ final<-c(
 dir.create(file.path(out,'final'))
 stopifnot(all(file.copy(file.path(out,final),file.path(out,'final',names(final)))))
 sha<-function(path) tolower(unname(tools::sha256sum(path)))
-git<-function(...) tryCatch(system2('git',c('-C',repo,...),stdout=TRUE),error=function(e) NA_character_)
 packages<-c('ggplot2','patchwork','scales','gtable','grid')
 writeLines(c(paste0('created_utc=',format(Sys.time(),tz='UTC')),
   paste0('elapsed_seconds=',round(as.numeric(difftime(Sys.time(),started,units='secs')),1)),
   paste0('summary_dir=',summary_dir),paste0('summary_manifest_sha256=',sha(file.path(summary_dir,'summary-manifest.rds'))),
-  paste0('repository_commit=',git('rev-parse','HEAD')),
-  paste0('repository_dirty=',length(git('status','--porcelain'))>0L),
+  paste0('repository_commit=',commit),
+  paste0('repository_dirty_before_run=',dirty),
   paste0('R=',R.version.string),paste0('platform=',R.version$platform),
   paste0('package_',packages,'=',vapply(packages,function(p) as.character(utils::packageVersion(p)),'')),
   paste0('library_paths=',paste(.libPaths(),collapse=';')),
