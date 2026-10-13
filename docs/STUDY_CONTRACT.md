@@ -74,7 +74,13 @@ forests can be large in paper runs, so reserve disk space before starting them.
 Exact historic manuscript layouts and standalone illustrative datasets (such
 as S5's separate n=500+500, seed-2 illustration) remain documented historical
 plotting work. They are not silently substituted with the larger main-study
-datasets. Building the final journal figure/submission package remains deferred.
+datasets. The manuscript's result figures are rebuilt from a combined summary
+by `scripts/figures/paper/make_paper_figures.R`, which uses the Round 2
+drawing scripts unchanged in typography and layout (see its README; it
+requires ggplot2 4.0.3 and patchwork 1.3.2, which the study environment
+bootstrap does not install). The generated-data figures (main Figure 2 and
+the transformed 20D scatter) are not rebuilt. Assembling the journal
+submission package remains deferred.
 
 ## Saved-posterior validation (U24)
 
