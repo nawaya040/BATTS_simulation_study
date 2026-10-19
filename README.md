@@ -1,121 +1,137 @@
 # BATTS simulation study
 
-Simulation code for *Two-sample Comparison through Additive Tree Models for
-Density Ratios*. The supported entry point is `scripts/run_study.R`.
-It runs selected jobs, saves each job independently, and resumes only verified
-results from the same code, configuration and environment.
+Code to reproduce the simulation studies (Section 4 and the corresponding
+Supplementary Materials) of *Two-sample Comparison through Additive Tree Models
+for Density Ratios* by Naoki Awaya, Yuliang Xu and Li Ma
+([arXiv:2508.03059](https://arxiv.org/abs/2508.03059)).
 
-The package is maintained separately at [nawaya040/BATTS](https://github.com/nawaya040/BATTS).
-This workflow pins BATTS **0.2.2**, commit
-`77c217297910a5ba50b71313e8289d9024b669c9`, and the submitted modified
-`densratio` source under `vendor/`. Case-study work remains in
-[yuliangxu/TwoSample](https://github.com/yuliangxu/TwoSample).
+- The proposed methods are implemented in the R package
+  [BATTS](https://github.com/nawaya040/BATTS). The paper's simulations use
+  **BATTS 0.2.2** (tag `v0.2.2`, commit `77c217297910a5ba50b71313e8289d9024b669c9`),
+  which this workflow installs and checks automatically.
+- The kernel-based comparators use the modified `densratio` source vendored in
+  `vendor/densratio` ([provenance](docs/DENSRATIO_PROVENANCE.md)).
+- The case study (Section 5) is reproduced separately in
+  [yuliangxu/TwoSample](https://github.com/yuliangxu/TwoSample).
 
-## Prepare an environment
+## What is computed
 
-Use R 4.5 or later and a C++17 compiler (Rtools45 on Windows with R 4.5).
-Install prerequisites in your ordinary R library if needed:
+| Family | Settings | Methods |
+| --- | --- | --- |
+| 1D | N(0,1) vs N(1,1.5^2); (n0,n1) = (500,500), (100,900), (2500,2500), (500,4500) | BAT |
+| 1D fixed trees | same distributions; (500,500), (300,700), (200,800), (100,900); 100 trees, depth 2 | AdaBoost DRT and GB (Supplementary Figure S1) |
+| 2D | global shift, local shift, local dispersion; (5000,5000), (9000,1000) | BAT, GB, FS, DRT, CDC, KLIEP, uLSIF |
+| 20D | global shift, null, latent location shift, latent dispersion; raw and transformed; (5000,5000), (9000,1000) | same as 2D |
+
+Every setting is replicated with seeds 1 to 50, giving 8,100 jobs. Tuning
+parameters, seeds, the random-number generator and the saved outputs are
+described in the [study settings](docs/STUDY_CONTRACT.md); the authoritative
+values are in `config/study.R` (profile `paper`).
+
+## 1. Prepare the environment
+
+Use R 4.5 or later and a C++17 compiler (Rtools45 on Windows). Install the
+prerequisites in your ordinary R library:
 
 ```r
 install.packages(c("remotes", "Rcpp", "RcppArmadillo", "ada", "rpart",
                    "mvtnorm", "pracma", "digest", "matrixStats"))
 ```
 
-From the repository root, create a **new, empty** study library:
+From the repository root, create a new, empty study library. This installs
+BATTS 0.2.2 from its commit and the vendored densratio, and records the
+environment in `.Rlib/study-environment.rds`:
 
 ```text
 Rscript scripts/prepare_environment.R --install=true --r-lib=.Rlib
 ```
 
-For an offline BATTS source build, add `--batts-source=/path/to/BATTS` pointing
-to a clean checkout of the exact pinned commit. The bootstrap installs BATTS
-and vendored densratio, then records R, OS, compiler, dependency versions and
-installed-file hashes in `.Rlib/study-environment.rds`. Other dependencies are
-resolved from the inherited R library paths and fingerprinted recursively.
-Workers must resolve the same files. Changes to this environment require a new
-run directory. This is a checked local environment receipt; preserve the
-working libraries or package archives to rebuild the same binaries later.
+For an offline build, add `--batts-source=/path/to/BATTS` pointing to a clean
+checkout of the same commit. The versions used for the paper are listed in
+[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md).
 
-## Inspect and run
+## 2. Check the workflow quickly
+
+The default profile `smoke` uses small samples and short runs; its results are
+labelled as not for the paper. For example:
 
 ```text
 Rscript scripts/run_study.R --dry-run=true
-Rscript scripts/run_study.R --profile=paper --dry-run=true
 Rscript scripts/run_study.R --profile=smoke --family=2d --scenario=local_shift --balance=balanced --methods=bat,gb,fs,ada --workers=2 --r-lib=.Rlib --output-dir=output/smoke-local
 ```
 
-The default profile is `smoke`. With no filters, smoke runs **160 jobs** across
-all supported settings. Paper settings enumerate **8,100 jobs**, including
-the fixed-tree 1D comparison. Both use 20 coordinates in the 20D scenarios.
-`--dry-run=true` prints the plan without installing packages or producing results.
+`--dry-run=true` prints the plan without computing anything.
 
-Filters accept comma-separated `--family`, `--scenario`, `--methods`,
-`--seeds` and `--case`; `--balance=balanced|unbalanced` and
-`--transformed=true|false` are also available. Families are `1d`, `1d_fixed`,
-`2d`, `20d`. CDC automatically includes its prerequisite Ada job.
+## 3. Run the paper settings
 
-A paper run additionally requires a clean Git checkout and
-`--confirm-canonical=YES`. Approve the actual computation separately before
-using this option. Freezing the code and reviewing a dry-run plan should precede
-a multi-day run. Start with a selected scenario/seed if desired; expanding the
-selection later uses the same full plan stored in the run manifest.
-
-## Resume and summarize
-
-Use the same profile, library, worker count and output root, with explicit resume:
+The `paper` profile uses the settings of the paper. It requires a clean Git
+checkout and `--confirm-canonical=YES`:
 
 ```text
-Rscript scripts/run_study.R --profile=smoke --family=2d --scenario=local_shift --balance=balanced --workers=2 --r-lib=.Rlib --output-dir=output/smoke-local --resume=true
-Rscript scripts/validate_results.R --run-dir=output/smoke-local
-Rscript scripts/summarize_study.R --run-dir=output/smoke-local --output-dir=output/summary-local
+Rscript scripts/run_study.R --profile=paper --dry-run=true
+Rscript scripts/run_study.R --profile=paper --workers=8 --r-lib=.Rlib --output-dir=output/paper --confirm-canonical=YES
 ```
 
-The second invocation can add missing methods/cases by expanding its filters.
-It checks existing result bodies and hashes before skipping completed jobs.
-Changing source, commit, profile, environment or worker count requires a new
-output root. A failed job leaves successful jobs available for resume.
-Corrupt or half-written outputs stop validation; they are never silently replaced.
-See [operations and recovery](docs/OPERATIONS.md).
-
-Add `--require-complete=true` to validation or aggregation when every job in
-the full profile must be present. Partial summaries explicitly report missing
-jobs. Summary directories must be new. Outputs include MSE/MCSE, failure counts,
-coverage and localization CSVs, diagnostic PDF pages, and a manifest linking
-the input and output hashes. Every MSE table carries a smoke/paper label.
-
-### Combining run roots
-
-When one canonical plan is executed in several run roots (for example with
-different worker counts), summarize them together:
+Each job uses its own fixed seed (see the study settings), so a selected job
+gives the same result regardless of the order of execution or the number of
+workers. A subset can be run with the filters `--family`, `--scenario`,
+`--methods`, `--seeds`, `--case`, `--balance` and `--transformed`; for example,
+one data set of the 2D local-shift scenario:
 
 ```text
-Rscript scripts/summarize_combined.R --run-dirs=ROOT_A,ROOT_B,ROOT_C --output-dir=output/summary-combined --expected-missing-methods=ulsif
+Rscript scripts/run_study.R --profile=paper --case=2d_local_shift_n0-5000_n1-5000_t-FALSE_s-001 --methods=gb,kliep --workers=1 --r-lib=.Rlib --output-dir=output/paper-check --confirm-canonical=YES
 ```
 
-Every root is validated in full. The roots must share the plan, the configuration
-apart from storage options (`save_draws`, `save_forests`), seeds, RNG kind and
-BATTS commit; shared cases must have identical input-data hashes. A job present in
-several roots must have identical estimates, metrics and final RNG state (the first
-listed root is used). Planned jobs of other methods than the expected-missing ones
-must all be present. The output has the same files as `summarize_study.R`, plus
-`combined-roots.csv`, `combined-duplicates.csv` and the merge record in
-`summary-manifest.rds`. No estimator is rerun.
+Computing time. The full paper profile took about 710 CPU hours on the machine
+used for the paper. Typical times per job are a few seconds to a minute for GB
+and FS, about 2 minutes (1D), 8 minutes (2D) and 15 minutes (20D) for BAT, and
+10 to 20 minutes for AdaBoost with cross-validation. The saved results occupy
+about 11 GB, mostly the posterior forests of BAT. A 20D AdaBoost job needs
+about 0.5 GB of memory, so choose the number of workers accordingly.
 
-## Scope and evidence
+An interrupted run is continued with the same arguments and `--resume=true`.
+Completed jobs are verified and skipped; corrupt or incomplete outputs stop the
+run instead of being replaced. See [operations and recovery](docs/OPERATIONS.md).
 
-- [Settings, seeds, saved objects and figure inputs](docs/STUDY_CONTRACT.md)
-- [Infrastructure validation](docs/INFRASTRUCTURE_VALIDATION.md)
-- [Current migration status and historical provenance](docs/MIGRATION_STATUS.md)
-- [AdaBoost arithmetic-loss CV decision](docs/ADABOOST_CV_ARITHMETIC_VALIDATION.md)
-- [Independent review scope](docs/REVIEW_SCOPE.md)
+## 4. Validate and summarize
 
-Older workflow entry points under `scripts/coverage`, `scripts/boosting`,
-`scripts/revision` and `scripts/figures` are historical references. Their shared
-functions and generators are reused by the supported runner; their standalone
-commands and historical result readers are not part of its resume contract.
-Use the commands above for new runs. Original import hashes remain in
-`docs/SOURCE_MANIFEST.csv`.
+```text
+Rscript scripts/validate_results.R --run-dir=output/paper --require-complete=true
+Rscript scripts/summarize_study.R --run-dir=output/paper --output-dir=output/summary --require-complete=true
+```
 
-Full paper runs, coauthor approval, journal-specific figure layout and the final
-submission archive are separate follow-up work. Existing official results and
-manuscript files are unchanged by this infrastructure.
+The summary contains the MSE tables with Monte Carlo standard errors
+(`mse-summary.csv`), per-seed metrics, coverage and localization summaries, a
+diagnostic PDF and a manifest linking input and output hashes. If one plan is
+computed in several output directories (for example, with different numbers of
+workers), summarize them together:
+
+```text
+Rscript scripts/summarize_combined.R --run-dirs=output/paper-a,output/paper-b --output-dir=output/summary-combined
+```
+
+## 5. Draw the figures
+
+The simulation figures of the paper are drawn from a complete summary without
+refitting any estimator. This step needs ggplot2 4.0.3 and patchwork 1.3.2 in
+addition to the study library:
+
+```text
+Rscript scripts/figures/paper/make_paper_figures.R --summary-dir=output/summary --output-dir=output/figures
+```
+
+The PDFs are written to `output/figures/final/` under the file names used in
+the manuscript. See [scripts/figures/paper](scripts/figures/paper/README.md).
+
+## Repository layout
+
+- `config/study.R`: settings of the `smoke` and `paper` profiles.
+- `scripts/run_study.R`, `validate_results.R`, `summarize_study.R`,
+  `summarize_combined.R`: the supported workflow; `scripts/study/` holds its
+  functions.
+- `scripts/figures/paper/`: figures of the paper.
+- `scripts/coverage`, `scripts/boosting`, `scripts/revision`: data generators
+  and estimator helpers used by the workflow, together with older standalone
+  entry points that are kept for reference.
+- `tests/`: checks of the workflow infrastructure.
+- `vendor/densratio`: the vendored comparator package.

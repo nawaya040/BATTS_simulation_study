@@ -2,8 +2,8 @@
 
 The authoritative configuration is `config/study.R`; job enumeration is
 `study_plan()` in `scripts/study/common.R`. Selection filters do not alter
-scientific settings. This patch is reproducibility infrastructure, reusing the
-approved estimators and CV rules. It does not introduce a new estimator.
+scientific settings. The workflow runs the estimators and cross-validation rules
+described in the paper; it does not introduce a new estimator.
 
 | Family | Paper settings | Smoke settings |
 | --- | --- | --- |
@@ -44,9 +44,7 @@ and the K_CV=0 branch of `R/utilities_for_experiment.R` in the research source.
 Each saved result records its actual RNG policy and final state. Scheduling
 order does not select a different dataset. Historical results made by other
 entry points may use different seeds or dependencies; this workflow does not
-claim byte-identical reproduction of those historical files. Current model
-changes (BATTS 0.2.0, arithmetic CV, 1D MCMC settings) were separately approved
-before this infrastructure patch.
+claim byte-identical reproduction of those historical files.
 
 The latent generator now additionally returns its already-computed loading
 matrix and pre-transform observations. This adds output fields without adding
@@ -75,14 +73,14 @@ Exact historic manuscript layouts and standalone illustrative datasets (such
 as S5's separate n=500+500, seed-2 illustration) remain documented historical
 plotting work. They are not silently substituted with the larger main-study
 datasets. The manuscript's result figures are rebuilt from a combined summary
-by `scripts/figures/paper/make_paper_figures.R`, which uses the Round 2
-drawing scripts unchanged in typography and layout (see its README; it
+by `scripts/figures/paper/make_paper_figures.R`, which uses the drawing scripts
+of the published figures unchanged in typography and layout (see its README; it
 requires ggplot2 4.0.3 and patchwork 1.3.2, which the study environment
 bootstrap does not install). The generated-data figures (main Figure 2 and
 the transformed 20D scatter) are not rebuilt. Assembling the journal
 submission package remains deferred.
 
-## Saved-posterior validation (U24)
+## Saved-posterior validation
 
 Validation checks the retained temperature count, positivity and finiteness.
 For detail seeds, it checks every serialized tree's preorder structure,

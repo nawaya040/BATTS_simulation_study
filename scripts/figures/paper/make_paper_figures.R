@@ -1,6 +1,6 @@
 # Rebuild the manuscript simulation figures from the final combined summary.
 # Step 1 converts verified results into the original drawing inputs; step 2
-# runs the drawing scripts in draw/, copied verbatim from the Round 2 package,
+# runs the drawing scripts of the published figures in draw/ (see README.md),
 # so typography, colours and geometry are unchanged. Final PDFs are copied to
 # final/ under the manuscript file names.
 # Example (library with ggplot2 4.0.3 and patchwork 1.3.2 first on the path):

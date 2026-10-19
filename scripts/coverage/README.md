@@ -69,8 +69,8 @@ Rscript scripts/coverage/run_coverage_2d.R `
 - transformed 20D is a separate optional grid.
 
 The ordinary 1D, 2D, and 20D grids contain 700 jobs. Including transformed
-20D gives 900 jobs. A full run requires separate approval and a controlled
-parallel schedule.
+20D gives 900 jobs. A full run is costly and needs a controlled parallel
+schedule.
 
 ## Output
 
@@ -84,7 +84,5 @@ Jobs are sequential internally. Parallelism belongs in the external scheduler,
 at the job level.
 
 Canonical MCMC settings are shared by 1D, 2D and 20D: 200 trees, 2000 burn-in
-iterations and 1000 retained draws. The 1D setting changed on 2026-10-01;
-existing 1D outputs with burn-in 1000 / retained 2000 require separate
-provenance and a rerun before reporting the new setting. See
-[scientific decisions](../../docs/SCIENTIFIC_DECISIONS.md).
+iterations and 1000 retained draws. See the
+[study settings](../../docs/STUDY_CONTRACT.md).
