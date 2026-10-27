@@ -43,6 +43,9 @@ study_source_identity <- function(root) {
   paths <- c(paste0('config/',files),
     paste0('scripts/',list.files(file.path(root,'scripts'),pattern='[.]R$',recursive=TRUE)),
     paste0('vendor/densratio/',list.files(file.path(root,'vendor/densratio'),recursive=TRUE)))
+  # An archived snapshot carries no .git/; record identity from source hashes alone.
+  if(!file.exists(file.path(root,'.git')) || !nzchar(Sys.which('git')))
+    return(list(commit=NA_character_,source_hashes=study_files_hash(root,paths),dirty=NA))
   list(commit=study_git(root,'rev-parse HEAD')[[1]],
        source_hashes=study_files_hash(root,paths),
        dirty=length(study_git(root,c('status','--porcelain')))>0L)
